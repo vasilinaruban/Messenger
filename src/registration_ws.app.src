@@ -1,0 +1,16 @@
+{application, registration_ws, [
+    {description, "An OTP application"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {registration_ws_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+	cowboy,
+	jose
+    ]},
+    {mod, {registration_ws_app, []}},
+    {env, [{jwt_secret, "my_very_secure_secret_key"}]}, %% in production, replace this with stronger, randomly generated key
+    {licenses, ["Apache-2.0"]},
+    {links, []}
+ ]}.
