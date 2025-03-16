@@ -9,11 +9,13 @@ start(_Type, _Args) ->
     application:ensure_all_started(cowboy),
     application:ensure_all_started(sasl),
     user_storage:init(),
+    message_srorage:init_db(),
     Dispatch = cowboy_router:compile([
         {'_', [
             {"/register", registration_handler, []},
             {"/auth", auth_handler, []},
-            {"/ws", ws_handler, []}
+            {"/ws", ws_handler, []},
+            {"/[...]", options_handler, []} 
         ]}
     ]),
     io:format("Dispatch table created. Starting Cowboy server...~n"),
