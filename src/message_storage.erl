@@ -1,5 +1,5 @@
 -module(message_storage).
--export([init_db/0, save_message/3, get_messages/1]).
+-export([init/0, save_message/3, get_messages/1]).
 
 -record(message, {
     sender,
@@ -8,7 +8,7 @@
     timestamp
 }).
 
-init_db() ->
+init() ->
     % mnesia:stop(),
     % mnesia:delete_schema([node()]),
     mnesia:create_schema([node()]),
@@ -29,7 +29,9 @@ save_message(Sender, Receiver, Text) ->
     },
     Fun = fun() -> mnesia:write(Message) end,
     case mnesia:transaction(Fun) of
-    	{atomic, ok} -> {ok, Message};
+    	{atomic, ok} ->
+            io:format("Message is saved!"),
+            {ok, Message};
     	{aborted, Reason} -> {error, Reason}
     end.
 

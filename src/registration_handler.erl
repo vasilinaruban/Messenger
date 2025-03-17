@@ -3,7 +3,7 @@
 
 -export([init/2]).
 
-init(Req0, State) ->
+init(Req0, _State) ->
     {ok, Body, Req1} = cowboy_req:read_body(Req0),
     Params = jsx:decode(Body, [return_maps]),
     Username = maps:get(<<"username">>, Params, undefined),

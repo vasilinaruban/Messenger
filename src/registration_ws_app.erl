@@ -9,7 +9,7 @@ start(_Type, _Args) ->
     application:ensure_all_started(cowboy),
     application:ensure_all_started(sasl),
     user_storage:init(),
-    message_srorage:init_db(),
+    message_storage:init(),
     Dispatch = cowboy_router:compile([
         {'_', [
             {"/register", registration_handler, []},

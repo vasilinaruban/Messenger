@@ -37,28 +37,9 @@ websocket_init(Req, _Opts, State) ->
     {ok, Req, State}.
 
 websocket_handle({text, Msg}, State = #{username := Sender}) ->
-    io:format(standard_io, "[~p] Message is saving~n", [erlang:system_time(millisecond)]).
-    logger:info("Received message: ~p", [Msg]),
-    case jsx:decode(Msg, [return_maps]) of
-        #{<<"to">> := Receiver, <<"text">> := Text} ->
-            case message_storage:save_message(Sender, Receiver, Text) of
-                {ok, _Message} ->
-                    Response = jsx:encode(#{type => <<"message_sent">>, status => <<"ok">>}),
-                    io:format("Message is saved~p~n"),
-                    {reply, {text, Response}, State};
-                {error, Reason} ->
-                    ErrorMsg = jsx:encode(#{type => <<"error">>, reason => Reason}),
-                    io:format("Message's not saved~p~n"),
-                    {reply, {text, ErrorMsg}, State}
-            end;
-        _ ->
-            ErrorMsg = jsx:encode(#{type => <<"error">>, reason => <<"invalid_message_format">>}),
-            {reply, {text, ErrorMsg}, State}
-    end;
-
-% websocket_handle({text, Msg}, State) ->
-%     Response = << "Echo: ", Msg/binary >>,
-%     {reply, {text, Response}, State};
+    message_storage:save_message(Sender, "receiver", Msg),
+    Response = << "Echo: ", Msg/binary >>,
+    {reply, {text, Response}, State};
 
 websocket_handle(_Data, State) ->
     {ok, State}.
