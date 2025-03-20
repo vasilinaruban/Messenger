@@ -23,7 +23,8 @@ init(Req0, State) ->
                 {ok, Username} ->
                     % If the token is valid, proceed with the WebSocket connection
                     io:format("WebSocket connected for user: ~p~n", [Username]),
-                    {cowboy_websocket, Req0, #{username => Username}};
+                    user_registry:add_user(Username, self()),
+                    {cowboy_websocket, Req0, #{username => Username, pid => self()}};
                 {error, Reason} ->
                     % If the token is invalid, reject the connection
                     Msg = io_lib:format("Invalid token: ~p", [Reason]),

@@ -10,6 +10,7 @@ start(_Type, _Args) ->
     application:ensure_all_started(sasl),
     user_storage:init(),
     message_storage:init(),
+    user_registry:init(),
     Dispatch = cowboy_router:compile([
         {'_', [
             {"/register", registration_handler, []},
