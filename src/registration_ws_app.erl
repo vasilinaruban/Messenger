@@ -16,7 +16,8 @@ start(_Type, _Args) ->
             {"/register", registration_handler, []},
             {"/auth", auth_handler, []},
             {"/ws", ws_handler, []},
-            {"/[...]", options_handler, []} 
+            {"/static/[...]", cowboy_static, {priv_dir, registration_ws, "static"}}
+            % {"/[...]", options_handler, []} 
         ]}
     ]),
     io:format("Dispatch table created. Starting Cowboy server...~n"),
