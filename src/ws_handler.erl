@@ -37,16 +37,39 @@ websocket_init(Req, _Opts, State) ->
     % Initialize the WebSocket connection
     {ok, Req, State}.
 
+
 websocket_handle({text, Msg}, State = #{username := Sender}) ->
-    message_storage:save_message(Sender, "receiver", Msg),
-    Response = << "Echo: ", Msg/binary >>,
-    {reply, {text, Response}, State};
+    io:format("Received message: ~p~n", [Msg]),
+
+    case catch jsx:decode(Msg, [{return_maps, true}]) of
+        {'EXIT', _Reason} ->
+            io:format("Invalid JSON received: ~p~n", [Msg]),
+            {reply, {text, <<"Invalid JSON format">>}, State};
+
+        #{<<"receiver">> := Receiver, <<"message">> := Message} ->
+            io:format("Parsed JSON: receiver=~p, message=~p~n", [Receiver, Message]),
+            message_storage:save_message(Sender, Receiver, Message),
+
+            case user_registry:get_user_pid(Receiver) of
+                {ok, ReceiverPid} ->
+                    ReceiverPid ! {send_message, Sender, Message};
+                {error, not_found} ->
+                    io:format("User ~p is not connected.~n", [Receiver])
+            end,
+            {ok, State}
+    end;
 
 websocket_handle(_Data, State) ->
     {ok, State}.
 
+
+websocket_info({send_message, Sender, Message}, State) ->
+    Response = jsx:encode(#{<<"sender">> => Sender, <<"message">> => Message}),
+    {reply, {text, Response}, State};
+
 websocket_info(_Info, State) ->
     {ok, State}.
+
 
 terminate(_Reason, _Req, #{username := Username}) ->
     io:format("WebSocket terminated for user: ~p~n", [Username]),

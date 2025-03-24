@@ -74,8 +74,13 @@ function authorization_button() {
 
 function send_message_button() {
     var message = document.getElementById("message").value;
-    // console.log(message);
     var receiver = document.getElementById("receiver").value;
 
-    socket.send(message);
+    const data = {
+        receiver: receiver,
+        message: message
+    };
+
+    console.log("Sending message: ", data);
+    socket.send(JSON.stringify(data));
 }
