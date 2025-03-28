@@ -61,7 +61,14 @@ function authorization_button() {
 
         socket.onmessage = function(event) {
             console.log("Received from server:", event.data);
-        };    
+            
+            try {
+                const messageData = JSON.parse(event.data);
+                displayMessage(messageData);
+            } catch (e) {
+                console.error("Error parsing message:", e);
+            }
+        };   
 
         socket.onclose = function() {
         console.log("Disconnected from WebSocket server");
@@ -73,14 +80,57 @@ function authorization_button() {
 // sending messages
 
 function send_message_button() {
-    var message = document.getElementById("message").value;
-    var receiver = document.getElementById("receiver").value;
+    const message = document.getElementById("message").value;
+    const receiver = document.getElementById("receiver").value;
+
+    if (!message || !receiver) {
+        alert("Please enter both message and receiver");
+        return;
+    }
 
     const data = {
-        receiver: receiver,
-        message: message
+        type: "message",
+        to: receiver,
+        text: message
     };
 
     console.log("Sending message: ", data);
     socket.send(JSON.stringify(data));
+    
+    document.getElementById("message").value = "";
+    
+    displayMessage({
+        type: "message",
+        from: "You",
+        text: message
+    });
+}
+
+function displayMessage(messageData) {
+    const chatContainer = document.getElementById('chat-messages');
+    
+    const messageElement = document.createElement('div');
+    messageElement.style.margin = '5px 0';
+    messageElement.style.padding = '8px';
+    messageElement.style.backgroundColor = '#f0f0f0';
+    messageElement.style.borderRadius = '4px';
+    
+    if (messageData.type === "message") {
+        messageElement.innerHTML = `
+            <strong>${messageData.from}:</strong> 
+            ${messageData.text}
+            <small style="color: #666; margin-left: 10px;">
+                ${new Date().toLocaleTimeString()}
+            </small>
+        `;
+    } else if (messageData.type === "error") {
+        messageElement.style.color = 'red';
+        messageElement.textContent = `Error: ${messageData.message}`;
+    } else {
+        messageElement.textContent = JSON.stringify(messageData);
+    }
+    
+    chatContainer.appendChild(messageElement);
+    
+    chatContainer.scrollTop = chatContainer.scrollHeight;
 }

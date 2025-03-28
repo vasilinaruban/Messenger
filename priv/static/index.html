@@ -2,6 +2,28 @@
 <html>
 <head>
     <title>WebSocket Test</title>
+    <style>
+        #chat-messages {
+            font-family: Arial, sans-serif;
+        }
+        .message {
+            margin: 5px 0;
+            padding: 8px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+        }
+        .message.self {
+            background-color: #e0f7fa;
+            text-align: right;
+        }
+        .message.error {
+            color: red;
+        }
+        small.time {
+            color: #666;
+            margin-left: 10px;
+        }
+    </style>
 </head>
 <body>
     <h1>WebSocket Test</h1>
@@ -29,6 +51,9 @@
         <label for="receiver">to:</label>
         <input type="text" id="receiver">
         <button onclick="send_message_button()">send message</button>
+    </div>
+    <div id="chat-messages" style="margin-top: 20px; border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll;">
+        <h3>Chat Messages</h3>
     </div>
     <script src="main.js"></script>
 </body>
