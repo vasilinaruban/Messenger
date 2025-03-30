@@ -40,23 +40,32 @@ websocket_init(Req, _Opts, State) ->
 
 websocket_handle({text, Msg}, State = #{username := Sender}) ->
     io:format("Received message: ~p~n", [Msg]),
-
-    case catch jsx:decode(Msg, [{return_maps, true}]) of
-        {'EXIT', _Reason} ->
-            io:format("Invalid JSON received: ~p~n", [Msg]),
-            {reply, {text, <<"Invalid JSON format">>}, State};
-
-        #{<<"receiver">> := Receiver, <<"message">> := Message} ->
-            io:format("Parsed JSON: receiver=~p, message=~p~n", [Receiver, Message]),
+    try jsx:decode(Msg, [return_maps]) of
+        #{<<"type">> := <<"message">>, <<"to">> := Receiver, <<"text">> := Message} ->
+            io:format("Sending message from ~p to ~p: ~p~n", [Sender, Receiver, Message]),
             message_storage:save_message(Sender, Receiver, Message),
-
+            
             case user_registry:get_user_pid(Receiver) of
                 {ok, ReceiverPid} ->
-                    ReceiverPid ! {send_message, Sender, Message};
+                    Response = jsx:encode(#{
+                        <<"type">> => <<"message">>,
+                        <<"from">> => Sender,
+                        <<"text">> => Message,
+                        <<"timestamp">> => erlang:system_time(millisecond)
+                    }),
+                    ReceiverPid ! {send_message, Response};
                 {error, not_found} ->
-                    io:format("User ~p is not connected.~n", [Receiver])
+                    io:format("User ~p not found~n", [Receiver])
             end,
-            {ok, State}
+            {ok, State};
+            
+        Other ->
+            io:format("Unexpected message format: ~p~n", [Other]),
+            {reply, {text, jsx:encode(#{<<"error">> => <<"invalid_message_format">>})}, State}
+    catch
+        _:Error ->
+            io:format("JSON decode error: ~p~n", [Error]),
+            {reply, {text, jsx:encode(#{<<"error">> => <<"invalid_json">>})}, State}
     end;
 
 websocket_handle(_Data, State) ->

@@ -70,8 +70,16 @@ function authorization_button() {
             }
         };   
 
-        socket.onclose = function() {
-        console.log("Disconnected from WebSocket server");
+        socket.onerror = function(error) {
+            console.error("WebSocket Error:", error);
+        };
+        
+        socket.onclose = function(event) {
+            if (event.wasClean) {
+                console.log(`Connection closed cleanly, code=${event.code}, reason=${event.reason}`);
+            } else {
+                console.error('Connection died');
+            }
         };
     })
     .catch(error => { console.log("Error: ", error); });
