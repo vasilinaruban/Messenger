@@ -22,8 +22,9 @@ init(Req0, State) ->
             case verify_token(binary_to_list(TokenValue)) of
                 {ok, Username} ->
                     % If the token is valid, proceed with the WebSocket connection
-                    io:format("WebSocket connected for user: ~p~n", [Username]),
+                    io:format("WebSocket connected for user: ~p Pid: ~p~n", [Username, self()]),
                     user_registry:add_user(Username, self()),
+                    io:format("All users: ~p~n", [user_registry:get_all_users()]),
                     {cowboy_websocket, Req0, #{username => Username, pid => self()}};
                 {error, Reason} ->
                     % If the token is invalid, reject the connection
@@ -33,9 +34,10 @@ init(Req0, State) ->
             end
     end.
 
-websocket_init(Req, _Opts, State) ->
-    % Initialize the WebSocket connection
-    {ok, Req, State}.
+websocket_init(Req, _Opts, State = #{username := _Username}) ->
+    MonitorRef = erlang:monitor(process, self()),
+    {ok, TRef} = timer:apply_after(60000, self(), idle_timeout),
+    {ok, Req, State#{monitor_ref => MonitorRef, idle_timer => TRef}}.
 
 
 websocket_handle({text, Msg}, State = #{username := Sender}) ->
@@ -43,18 +45,23 @@ websocket_handle({text, Msg}, State = #{username := Sender}) ->
         #{<<"type">> := <<"message">>, <<"to">> := Receiver, <<"text">> := Message} ->
             case user_registry:get_user_pid(Receiver) of
                 {ok, ReceiverPid} ->
-                    Response = jsx:encode(#{
-                        <<"type">> => <<"message">>,
-                        <<"from">> => Sender,
-                        <<"text">> => Message,
-                        <<"timestamp">> => erlang:system_time(millisecond)
-                    }),
-                    ReceiverPid ! {send_message, Response};  % Изменено здесь
+                    case is_process_alive(ReceiverPid) of
+                        true ->
+                            Response = jsx:encode(#{
+                                <<"type">> => <<"message">>,
+                                <<"from">> => Sender,
+                                <<"text">> => Message,
+                                <<"timestamp">> => erlang:system_time(millisecond)
+                            }),
+                            ReceiverPid ! {send_message, Response},
+                            io:format("Message sent to ~p~n", [ReceiverPid]);
+                        false ->
+                            io:format("User ~p is registered but process is dead~n", [Receiver])
+                    end;
                 {error, not_found} -> 
                     io:format("User ~p not found~n", [Receiver])
             end,
             {ok, State};
-            
         Other ->
             io:format("Unexpected message format: ~p~n", [Other]),
             {reply, {text, jsx:encode(#{<<"error">> => <<"invalid_message_format">>})}, State}
@@ -71,12 +78,23 @@ websocket_handle(_Data, State) ->
 websocket_info({send_message, Message}, State) ->
     {reply, {text, Message}, State};
 
+websocket_info({'DOWN', _Ref, process, Pid, Reason}, State) ->
+    io:format("Process ~p died: ~p~n", [Pid, Reason]),
+    user_registry:handle_down(Pid, Reason),
+    {shutdown, State};
+
+websocket_info(idle_timeout, #{username := Username} = State) ->
+    io:format("Closing idle connection for ~p~n", [Username]),
+    {shutdown, State};
+
 websocket_info(_Info, State) ->
     {ok, State}.
 
 
-terminate(_Reason, _Req, #{username := Username}) ->
-    io:format("WebSocket terminated for user: ~p~n", [Username]),
+terminate(_Reason, _Req, #{monitor_ref := Ref, idle_timer := TRef, username := Username}) ->
+    timer:cancel(TRef),
+    erlang:demonitor(Ref, [flush]),
+    user_registry:remove_user(Username),
     ok;
 
 terminate(_Reason, _Req, _State) ->
