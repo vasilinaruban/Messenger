@@ -6,36 +6,16 @@
     password
 }).
 
-% -define(USER_DB, user_db).
-
-% add_user(Username, Password) ->
-%     ets:insert(?USER_DB, {Username, Password}).
-
-% authenticate(Username, Password) ->
-%     case ets:lookup(?USER_DB, Username) of
-%         [{Username, Password}] -> true;
-%         _ -> false
-%     end.
-
-% find_user(Username) ->
-%     case ets:lookup(?USER_DB, Username) of
-%         [{Username, _Password}] -> {ok, Username};
-%         _ -> not_found
-%     end.
-
-% init() ->
-%     ets:new(?USER_DB, [set, named_table, public]).
-
 add_user(Username, Password) ->
-	io:format("Saving message...~n"),
-    User = #user{
-        username = Username,
-        password = Password
-    },
-    Fun = fun() -> mnesia:write(User) end,
-    case mnesia:transaction(Fun) of
-        {atomic, ok} -> true;
-        {aborted, _Reason} -> false
+    case mnesia:dirty_read(user, Username) of
+        [] ->
+            User = #user{username = Username, password = Password},
+            case mnesia:transaction(fun() -> mnesia:write(User) end) of
+                {atomic, ok} -> true;
+                {aborted, {exists, _}} -> {error, user_exists};
+                {aborted, _} -> false
+            end;
+        [_] -> {error, user_exists}
     end.
 
 authenticate(Username, Password) ->

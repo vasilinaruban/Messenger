@@ -3,34 +3,45 @@
 
 -export([init/2]).
 
-init(Req0, _State) ->
-    {ok, Body, Req1} = cowboy_req:read_body(Req0),
-    Params = jsx:decode(Body, [return_maps]),
-    Username = maps:get(<<"username">>, Params, undefined),
-    Password = maps:get(<<"password">>, Params, undefined),
+init(Req0=#{method := <<"POST">>}, State) ->
+    try
+        case cowboy_req:read_body(Req0) of
+            {ok, Body, Req1} when Body =/= <<>> ->
+                process_registration(Body, Req1);
+            {ok, _, Req1} ->
+                respond(Req1, 400, #{error => <<"Empty request body">>});
+            {error, _} ->
+                respond(Req0, 400, #{error => <<"Error reading body">>})
+        end
+    catch
+        _:_ -> respond(Req0, 500, #{error => <<"Internal server error">>})
+    end;
+init(Req0, State) ->
+    respond(Req0, 405, #{error => <<"Method not allowed">>}).
 
-    case {Username, Password} of
-        {undefined, _} -> respond(Req1, 400, <<"Missing username">>);
-        {_, undefined} -> respond(Req1, 400, <<"Missing password">>);
+process_registration(Body, Req) ->
+    try jsx:decode(Body, [return_maps]) of
+        #{<<"username">> := Username, <<"password">> := Password} ->
+            register_user(Username, Password, Req);
         _ ->
-            try
-                case user_storage:add_user(binary_to_list(Username), binary_to_list(Password)) of
-                    true -> respond(Req1, 201, <<"User registered">>);
-                    false -> respond(Req1, 500, <<"Registration failed">>)
-                end
-            catch
-                _:Reason -> respond(Req1, 500, <<"Internal Server Error: ", (io_lib:format("~p", [Reason]))/binary>>)
-            end
+            respond(Req, 400, #{error => <<"Invalid request format">>})
+    catch
+        _:_ -> respond(Req, 400, #{error => <<"Malformed JSON">>})
     end.
 
-respond(Req, Code, Message) ->
-    % Headers = #{
-    %     <<"access-control-allow-origin">> => <<"*">>,
-    %     <<"access-control-allow-methods">> => <<"POST, GET, OPTIONS">>,
-    %     <<"access-control-allow-headers">> => <<"Content-Type">>
-    % },
-    Req1 = cowboy_req:set_resp_header(<<"access-control-max-age">>, <<"1728000">>, Req),
-    Req2 = cowboy_req:set_resp_header(<<"access-control-allow-methods">>, <<"GET, POST, OPTIONS">>, Req1),
-    Req3 = cowboy_req:set_resp_header(<<"access-control-allow-headers">>, <<"content-type, authorization">>, Req2),
-    Req4 = cowboy_req:set_resp_header(<<"access-control-allow-origin">>, <<$*>>, Req3),
-    cowboy_req:reply(Code, #{}, Message, Req4).
+register_user(Username, Password, Req) ->
+    case user_storage:add_user(binary_to_list(Username), binary_to_list(Password)) of
+        true -> 
+            respond(Req, 201, #{status => <<"success">>});
+        {error, user_exists} -> 
+            respond(Req, 409, #{error => <<"Username already exists">>});
+        _ -> 
+            respond(Req, 500, #{error => <<"Registration failed">>})
+    end.
+
+respond(Req, Status, Body) ->
+    Headers = #{
+        <<"content-type">> => <<"application/json">>,
+        <<"access-control-allow-origin">> => <<"*">>
+    },
+    cowboy_req:reply(Status, Headers, jsx:encode(Body), Req).
