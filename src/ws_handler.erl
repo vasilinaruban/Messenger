@@ -45,7 +45,7 @@ websocket_handle({text, Msg}, State = #{username := Sender}) ->
                 {ok, ReceiverPid} ->
                     Response = jsx:encode(#{
                         <<"type">> => <<"message">>,
-                        <<"from">> => list_to_binary(Sender),
+                        <<"from">> => Sender,
                         <<"text">> => Message,
                         <<"timestamp">> => erlang:system_time(millisecond)
                     }),
