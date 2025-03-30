@@ -57,14 +57,23 @@ function authorization_button() {
 
         socket.onopen = function() {
             console.log("Connected to WebSocket server");
+            
+            socket.send(JSON.stringify({
+                type: "get_history"
+            }));
         };
 
         socket.onmessage = function(event) {
-            console.log("Received from server:", event.data);
-            
             try {
                 const messageData = JSON.parse(event.data);
-                displayMessage(messageData);
+                if (messageData.type === "message") {
+                    displayMessage({
+                        type: "message",
+                        from: messageData.from,
+                        text: messageData.text,
+                        timestamp: messageData.timestamp
+                    });
+                }
             } catch (e) {
                 console.error("Error parsing message:", e);
             }

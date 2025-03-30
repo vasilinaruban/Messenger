@@ -39,22 +39,18 @@ websocket_init(Req, _Opts, State) ->
 
 
 websocket_handle({text, Msg}, State = #{username := Sender}) ->
-    io:format("Received message: ~p~n", [Msg]),
     try jsx:decode(Msg, [return_maps]) of
         #{<<"type">> := <<"message">>, <<"to">> := Receiver, <<"text">> := Message} ->
-            io:format("Sending message from ~p to ~p: ~p~n", [Sender, Receiver, Message]),
-            message_storage:save_message(Sender, Receiver, Message),
-            
             case user_registry:get_user_pid(Receiver) of
                 {ok, ReceiverPid} ->
                     Response = jsx:encode(#{
                         <<"type">> => <<"message">>,
-                        <<"from">> => Sender,
+                        <<"from">> => list_to_binary(Sender),
                         <<"text">> => Message,
                         <<"timestamp">> => erlang:system_time(millisecond)
                     }),
-                    ReceiverPid ! {send_message, Response};
-                {error, not_found} ->
+                    ReceiverPid ! {send_message, Response};  % Изменено здесь
+                {error, not_found} -> 
                     io:format("User ~p not found~n", [Receiver])
             end,
             {ok, State};
@@ -72,9 +68,8 @@ websocket_handle(_Data, State) ->
     {ok, State}.
 
 
-websocket_info({send_message, Sender, Message}, State) ->
-    Response = jsx:encode(#{<<"sender">> => Sender, <<"message">> => Message}),
-    {reply, {text, Response}, State};
+websocket_info({send_message, Message}, State) ->
+    {reply, {text, Message}, State};
 
 websocket_info(_Info, State) ->
     {ok, State}.
