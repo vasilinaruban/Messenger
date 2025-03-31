@@ -1,59 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>WebSocket Test</title>
-    <style>
-        #chat-messages {
-            font-family: Arial, sans-serif;
-        }
-        .message {
-            margin: 5px 0;
-            padding: 8px;
-            background-color: #f0f0f0;
-            border-radius: 4px;
-        }
-        .message.self {
-            background-color: #e0f7fa;
-            text-align: right;
-        }
-        .message.error {
-            color: red;
-        }
-        small.time {
-            color: #666;
-            margin-left: 10px;
-        }
-    </style>
+    <title>WebSocket Chat</title>
+    <style src="main.css"></style>
 </head>
 <body>
-    <h1>WebSocket Test</h1>
-    <p>Open the browser console to see WebSocket messages.</p>
-    <div>
-        <p>Registration</p>
-        <label for="username">username:</label>
-        <input type="text" id="reg_username">
-        <label for="password">password:</label>
-        <input type="password" id="reg_password">
-        <button onclick="registration_button()">sign up</button>
-    </div>
-    <div>
-        <p>Authorization</p>
-        <label for="username">username:</label>
-        <input type="text" id="username">
-        <label for="password">password:</label>
-        <input type="password" id="password">
-        <button onclick="authorization_button()">log in</button>
-    </div>
-    <div>
-        <p>Sending messages</p>
-        <label for="message">message:</label>
-        <input type="text" id="message">
-        <label for="receiver">to:</label>
-        <input type="text" id="receiver">
-        <button onclick="send_message_button()">send message</button>
-    </div>
-    <div id="chat-messages" style="margin-top: 20px; border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll;">
-        <h3>Chat Messages</h3>
+    <h1>WebSocket Chat</h1>
+    <div class="container">
+        <div id="contacts">
+            <h3>Contacts</h3>
+            <div id="contacts-list"></div>
+        </div>
+        <div id="chat-area">
+            <div class="auth-section">
+                <div>
+                    <p>Registration</p>
+                    <label for="username">username:</label>
+                    <input type="text" id="reg_username">
+                    <label for="password">password:</label>
+                    <input type="password" id="reg_password">
+                    <button onclick="registration_button()">sign up</button>
+                </div>
+                <div>
+                    <p>Authorization</p>
+                    <label for="username">username:</label>
+                    <input type="text" id="username">
+                    <label for="password">password:</label>
+                    <input type="password" id="password">
+                    <button onclick="authorization_button()">log in</button>
+                </div>
+            </div>
+            <div class="search-section">
+                <p>Search Users</p>
+                <input type="text" id="search-username" placeholder="Enter username">
+                <button onclick="search_users()">Search</button>
+                <div id="search-results" class="search-results"></div>
+            </div>
+            <div id="chat-messages">
+                <h3>Chat Messages</h3>
+            </div>
+            <div>
+                <p>Sending messages</p>
+                <label for="message">message:</label>
+                <input type="text" id="message">
+                <label for="receiver">to:</label>
+                <input type="text" id="receiver">
+                <button onclick="send_message_button()">send message</button>
+            </div>
+        </div>
     </div>
     <script src="main.js"></script>
 </body>
