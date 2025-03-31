@@ -1,3 +1,5 @@
+let currentUser = '';
+
 // registration
 
 function registration_button() {
@@ -34,6 +36,8 @@ function authorization_button() {
 
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
+
+    currentUser = username;
 
     const data = {
         username: username,
@@ -127,6 +131,23 @@ function send_message_button() {
         from: "You",
         text: message
     });
+}
+
+function add_contact_button() {
+    const contact = document.getElementById("search-username").value;
+    if (!contact) {
+        alert("Please enter a username");
+        return;
+    }
+
+    const data = {
+        type: "add_contact",
+        user: currentUser,  
+        contact: contact   
+    };
+
+    socket.send(JSON.stringify(data));
+    document.getElementById("search-username").value = "";
 }
 
 function displayMessage(messageData) {

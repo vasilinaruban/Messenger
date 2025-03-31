@@ -65,6 +65,21 @@ websocket_handle({text, Msg}, State = #{username := Sender}) ->
                     io:format("Error"),
                     {reply, {text, jsx:encode(#{<<"error">> => <<"not found">>})}, State}
             end;
+
+        #{<<"type">> := <<"add_contact">>, <<"user">> := Owner, <<"contact">> := Contact} ->
+            case user_storage:find_user(Contact) of
+                {ok, Contact} ->
+                    contact_storage:add_contact(Owner, Contact),
+                    {reply, {text, jsx:encode(#{
+                        <<"type">> => <<"contact_added">>,
+                        <<"contact">> => Contact
+                    })}, State};
+                _ ->
+                    {reply, {text, jsx:encode(#{
+                        <<"type">> => <<"contact_error">>,
+                        <<"message">> => <<"User does not exist">>
+                    })}, State}
+            end;
         Other ->
             io:format("Unexpected message format: ~p~n", [Other]),
             {reply, {text, jsx:encode(#{<<"error">> => <<"invalid_message_format">>})}, State}
