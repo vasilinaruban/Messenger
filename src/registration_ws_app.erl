@@ -68,8 +68,14 @@ init_storages() ->
             io:format("User storage initialized successfully~n"),
             case message_storage:init() of
                 ok -> 
-                    io:format("Message storage initialized~n"),
-                    start_cowboy();
+                    case contact_storage:init() of 
+                        ok ->
+                            io:format("Message storage initialized~n"),
+                            start_cowboy();
+                        {error, Reason} ->
+                            io:format("Contact storage init failed: ~p~n", [Reason]),
+                            {error, {contact_storage_failed, Reason}}  
+                    end;
                 {error, Reason} ->
                     io:format("Message storage init failed: ~p~n", [Reason]),
                     {error, {message_storage_failed, Reason}}

@@ -57,9 +57,11 @@ function authorization_button() {
 
         socket.onopen = function() {
             console.log("Connected to WebSocket server");
-            
+
+
             socket.send(JSON.stringify({
-                type: "get_history"
+                type: "get_contacts",
+                user: username
             }));
         };
 
@@ -73,6 +75,10 @@ function authorization_button() {
                         text: messageData.text,
                         timestamp: messageData.timestamp
                     });
+                }
+                else if (messageData.type === "contacts") {
+                    console.log("Received contacts:", messageData.contact);
+                    displayContacts(messageData.contact); 
                 }
             } catch (e) {
                 console.error("Error parsing message:", e);
@@ -150,4 +156,23 @@ function displayMessage(messageData) {
     chatContainer.appendChild(messageElement);
     
     chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+function displayContacts(contacts) {
+    const contactsContainer = document.getElementById('contacts-list');
+    contactsContainer.innerHTML = ''; 
+    
+    if (contacts && contacts.length > 0) {
+        contacts.forEach(contact => {
+            const contactElement = document.createElement('div');
+            contactElement.className = 'contact';
+            contactElement.textContent = contact;
+            contactElement.onclick = function() {
+                document.getElementById('receiver').value = contact;
+            };
+            contactsContainer.appendChild(contactElement);
+        });
+    } else {
+        contactsContainer.textContent = 'No contacts found';
+    }
 }
