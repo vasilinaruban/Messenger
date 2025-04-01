@@ -51,7 +51,8 @@ websocket_handle({text, Msg}, State = #{username := Sender}) ->
                             io:format("User ~p is registered but process is dead~n", [Receiver])
                     end;
                 {error, not_found} -> 
-                    io:format("User ~p not found~n", [Receiver])
+                    message_storage:save_message(Sender, Receiver, Message),
+                    io:format("User ~p is offline~n", [Receiver])
             end,
             {ok, State};
 

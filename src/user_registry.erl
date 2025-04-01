@@ -1,5 +1,5 @@
 -module(user_registry).
--export([init/0, add_user/2, remove_user/1, get_user_pid/1, get_all_users/0, handle_down/2]).
+-export([init/0, add_user/2, remove_user/1, get_user_pid/1, get_all_users/0, handle_down/2, is_online/1]).
 
 -define(CONNECTED_USERS, connected_users).
 
@@ -30,6 +30,12 @@ get_user_pid(Username) ->
     case ets:lookup(?CONNECTED_USERS, Username) of
         [{Username, Pid, _}] -> {ok, Pid};
         [] -> {error, not_found}
+    end.
+
+is_online(Username) ->
+    case get_user_pid(Username) of
+        {ok, _} -> online;
+        _ -> offline
     end.
 
 get_all_users() ->

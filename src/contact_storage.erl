@@ -67,9 +67,16 @@ get_contacts(Owner) when is_list(Owner) ->
 get_contacts(Owner) ->
     case mnesia:dirty_match_object(#contact{owner = Owner, _ = '_'}) of
         Contacts when is_list(Contacts) ->
-            {ok, lists:map(fun(#contact{username = U}) -> U end, Contacts)};
+            {ok, lists:map(fun(#contact{username = U}) -> U
+                % case user_registry:is_online(U) of 
+                % online -> {U, online}; 
+                % _ -> {U, offline}
+                % end
+            end, Contacts)};
         _ -> {error, not_found}
     end.
+
+
 
 is_contact(Owner, Contact) when is_list(Owner) ->
     is_contact(list_to_binary(Owner), Contact);
